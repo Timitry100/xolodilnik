@@ -90,11 +90,46 @@ export function parseComposition(text) {
     .slice(0, 500);
 }
 
+/** Марка / бренд / производитель. */
+export function parseBrand(text) {
+  const t = String(text || '');
+  const m = t.match(/(?:торговая марка|марка|бренд|производитель|изготовитель)\s*[::]?\s*([^\n]{3,60})/i);
+  if (m) return m[1].trim().replace(/[«»"',.!?]+$/, '');
+  return '';
+}
+
+/** Объём / масса нетто: «масса нетто 900 г», «объем 1 л», «450 мл», «0,5 литра». */
+export function parseVolume(text) {
+  const t = String(text || '');
+  // с меткой: масса нетто / объем / нетто / масса
+  let m = t.match(/(?:масса нетто|объем|объём|нетто|масса)\s*[::]?\s*(\d+[.,]?\d*)\s*(мл|литр[а-я]*|л|кг|грамм|г)/i);
+  if (m) {
+    const num = m[1].replace(',', '.');
+    let unit = m[2].toLowerCase();
+    if (unit.startsWith('миллилитр') || unit === 'мл') unit = 'мл';
+    else if (unit.startsWith('литр')) unit = 'л';
+    else if (unit === 'л') unit = 'л';
+    else if (unit.startsWith('килог') || unit === 'кг') unit = 'кг';
+    else unit = 'г';
+    return `${num} ${unit}`;
+  }
+  // просто объём без метки: «450 мл», «1 л», «1,5 литра»
+  m = t.match(/(\d+[.,]?\d*)\s*(мл|литр[а-я]*|л)/i);
+  if (m) {
+    const num = m[1].replace(',', '.');
+    const unit = m[2].toLowerCase().startsWith('литр') ? 'л' : m[2].toLowerCase();
+    return `${num} ${unit}`;
+  }
+  return '';
+}
+
 export function parseProductText(text) {
   const t = String(text || '');
   const expiry = parseExpiry(t);
   return {
     name: parseName(t),
+    brand: parseBrand(t),
+    volume: parseVolume(t),
     kcal: parseGrams(t, /(?:энергетическая ценность|калорийность|ккал|энергия|энерг\.)[^0-9]{0,30}([0-9]+[.,]?[0-9]*)/i),
     protein: parseGrams(t, /белки?[^0-9]{0,20}([0-9]+[.,]?[0-9]*)/i),
     fat: parseGrams(t, /жиры?[^0-9]{0,20}([0-9]+[.,]?[0-9]*)/i),

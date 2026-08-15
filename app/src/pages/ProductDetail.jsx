@@ -76,6 +76,13 @@ export default function ProductDetail() {
           </div>
         </div>
 
+        {p.volume && (
+          <div className="detail-section">
+            <h4>Объём / масса</h4>
+            <div>{p.volume}</div>
+          </div>
+        )}
+
         {fmtKbju(p).length > 0 && (
           <div className="detail-section">
             <h4>КБЖУ (на 100 г)</h4>

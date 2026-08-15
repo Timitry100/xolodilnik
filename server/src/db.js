@@ -49,8 +49,19 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 `);
 
+// Миграции: добавляем колонку volume, если БД уже существовала
+try {
+  const cols = db.prepare('PRAGMA table_info(products)').all();
+  if (!cols.some((c) => c.name === 'volume')) {
+    db.exec('ALTER TABLE products ADD COLUMN volume TEXT');
+    console.log('[db] добавлена колонка volume');
+  }
+} catch (e) {
+  console.warn('[db] миграция volume не выполнена:', e.message);
+}
+
 const productCols =
-  'id, user_id, name, brand, category, kcal, protein, fat, carbs, composition, expiry_date, barcode, gtin, serial, source, image_url, note, quantity, created_at, updated_at';
+  'id, user_id, name, brand, category, kcal, protein, fat, carbs, composition, expiry_date, barcode, gtin, serial, source, image_url, note, quantity, volume, created_at, updated_at';
 
 function numOrNull(v) {
   if (v === null || v === undefined || v === '') return null;
@@ -88,8 +99,8 @@ export function getProduct(id, userId) {
 export function addProduct(userId, p = {}) {
   const r = db
     .prepare(
-      `INSERT INTO products (user_id, name, brand, category, kcal, protein, fat, carbs, composition, expiry_date, barcode, gtin, serial, source, image_url, note, quantity)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+      `INSERT INTO products (user_id, name, brand, category, kcal, protein, fat, carbs, composition, expiry_date, barcode, gtin, serial, source, image_url, note, quantity, volume)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
     )
     .run(
       userId,
@@ -108,7 +119,8 @@ export function addProduct(userId, p = {}) {
       p.source || 'manual',
       p.image_url || null,
       p.note || null,
-      p.quantity || 1
+      p.quantity || 1,
+      p.volume || null
     );
   return getProduct(r.lastInsertRowid, userId);
 }
@@ -122,7 +134,7 @@ export function updateProduct(id, userId, p = {}) {
     db.prepare('DELETE FROM notifications WHERE product_id = ?').run(id);
   }
   db.prepare(
-    `UPDATE products SET name=?, brand=?, category=?, kcal=?, protein=?, fat=?, carbs=?, composition=?, expiry_date=?, barcode=?, gtin=?, serial=?, source=?, image_url=?, note=?, quantity=?, updated_at=datetime('now')
+    `UPDATE products SET name=?, brand=?, category=?, kcal=?, protein=?, fat=?, carbs=?, composition=?, expiry_date=?, barcode=?, gtin=?, serial=?, source=?, image_url=?, note=?, quantity=?, volume=?, updated_at=datetime('now')
      WHERE id=? AND user_id=?`
   ).run(
     merged.name,
@@ -141,6 +153,7 @@ export function updateProduct(id, userId, p = {}) {
     merged.image_url || null,
     merged.note || null,
     merged.quantity || 1,
+    merged.volume || null,
     id,
     userId
   );
@@ -189,7 +202,7 @@ export function getStats(userId) {
 export function findByCode(code) {
   const row = db
     .prepare(
-      `SELECT name, brand, category, kcal, protein, fat, carbs, composition, image_url, source
+      `SELECT name, brand, category, kcal, protein, fat, carbs, composition, image_url, volume, source
        FROM products WHERE barcode = ? OR gtin = ? ORDER BY updated_at DESC LIMIT 1`
     )
     .get(code, code);
@@ -204,6 +217,7 @@ export function findByCode(code) {
     carbs: row.carbs,
     composition: row.composition || '',
     image_url: row.image_url || '',
+    volume: row.volume || '',
     source: row.source || 'manual',
   };
 }

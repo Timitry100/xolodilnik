@@ -42,6 +42,7 @@ async function lookupOFF(ean) {
       carbs: n.carbohydrates_100g ?? null,
       composition: p.ingredients_text_ru || p.ingredients_text || '',
       image_url: p.image_front_small_url || '',
+      volume: p.quantity || '',
     };
   } catch {
     return null;

@@ -40,6 +40,8 @@ if (!rel5d?.date) { failed++; console.log('❌ rel5d: null'); }
 
 const parsed = parseProductText(
   'Молоко питьевое ультрапастеризованное 3,2%\n' +
+    'Торговая марка: Простоквашино\n' +
+    'Масса нетто: 900 г\n' +
     'Состав: молоко цельное, молоко обезжиренное\n' +
     'Пищевая ценность на 100 г: белки 3,0 г, жиры 3,2 г, углеводы 4,7 г\n' +
     'Энергетическая ценность 60 ккал\n' +
@@ -47,6 +49,8 @@ const parsed = parseProductText(
 );
 console.log('ℹ️ parseProductText →', JSON.stringify(parsed, null, 2));
 check('name', parsed.name, 'Молоко питьевое ультрапастеризованное 3,2%');
+check('brand', parsed.brand, 'Простоквашино');
+check('volume', parsed.volume, '900 г');
 check('protein', String(parsed.protein), '3');
 check('fat', String(parsed.fat), '3.2');
 check('carbs', String(parsed.carbs), '4.7');

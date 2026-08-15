@@ -30,6 +30,7 @@ export default function ProductForm() {
     brand: initial.brand || '',
     category: initial.category || guessCategory(initial.name) || 'Другое',
     expiry_date: initial.expiry_date || '',
+    volume: initial.volume || '',
     kcal: initial.kcal ?? '',
     protein: initial.protein ?? '',
     fat: initial.fat ?? '',
@@ -63,6 +64,7 @@ export default function ProductForm() {
       brand: form.brand.trim() || null,
       category: form.category || 'Другое',
       expiry_date: form.expiry_date || null,
+      volume: form.volume.trim() || null,
       kcal: num(form.kcal),
       protein: num(form.protein),
       fat: num(form.fat),
@@ -111,6 +113,11 @@ export default function ProductForm() {
         <div className="field">
           <label>Бренд</label>
           <input value={form.brand} onChange={set('brand')} placeholder="Производитель / торговая марка" />
+        </div>
+
+        <div className="field">
+          <label>Объём / масса нетто</label>
+          <input value={form.volume} onChange={set('volume')} placeholder="Например: 900 г, 1 л, 450 мл" />
         </div>
 
         <div className="field">
