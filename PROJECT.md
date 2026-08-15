@@ -224,6 +224,23 @@ cd ../server && npm start   # сервер сам раздаёт app/dist на �
 5. `APP_URL=https://app.твой-домен.ru` в `server\.env`, указать тот же адрес в BotFather (Menu Button).
 6. Порт 3000 наружу НЕ открывать — всё идёт через nginx по 443.
 
+### SSL-сертификат для поддомена (win-acme)
+
+Сертификат первого сайта (`bobkoved.ru`) не покрывает поддомен `app.bobkoved.ru`
+и может быть выдан недоверенным центром — для Telegram нужен публичный Let's Encrypt:
+
+1. Создать папку `C:\acme`.
+2. В nginx добавить **HTTP-блок** с `location /.well-known/acme-challenge/`
+   (Блок 1 из `deploy/nginx-xolodilnik.conf.example`), `nginx -s reload`.
+3. Скачать win-acme (**https://www.win-acme.com/**), распаковать, запустить `wacs.exe`.
+4. В меню: `N` → домен `app.bobkoved.ru` → способ **Webroot** → путь `C:\acme`
+   → установка **PEM files** → папка `C:\acme\certs` → создать задачу планировщика
+   (автопродление каждые ~60 дней).
+5. В nginx добавить **HTTPS-блок** (Блок 2 из шаблона) с путями
+   `C:/acme/certs/app.bobkoved.ru/certificate.pem` и `privkey.pem`.
+6. `nginx -t` → `nginx -s reload`, проверить `https://app.bobkoved.ru` с телефона.
+7. Порт 80 должен быть открыт наружу (иначе проверка домена не пройдёт).
+
 ### Вариант B — Caddy (бесплатный HTTPS, сам выпускает сертификаты)
 
 ```
@@ -348,6 +365,15 @@ git config --global credential.helper manager   # Git сохранит логи�
 - `start.bat` теперь запускает сервер через `_tools/autoupdate.js`.
 - В раздел 14 добавлено правило: после любых изменений — `git add -A && git commit && git push`.
 - **Осталось:** настроить авторизацию для будущих пушей с этой машины (`gh auth login` или `credential.helper`).
+
+### 2026-08-15 — Поддомен app.bobkoved.ru: проверка и инструкция по сертификату (Cline)
+- DNS проверен: `app.bobkoved.ru` → `95.181.213.106` ✅ (A-запись уже создана).
+- Обнаружено: сертификат `bobkoved.ru` не покрывает поддомен `app` и выдан
+  непубличным CA (`YR1`) — Telegram такой не примет. Нужен Let's Encrypt.
+- `deploy/nginx-xolodilnik.conf.example` обновлён: два готовых блока
+  (HTTP+ACME-проверка и HTTPS+прокси на 127.0.0.1:3000), подставлен домен `app.bobkoved.ru`.
+- В раздел 13 добавлена инструкция по выпуску сертификата через win-acme.
+- Временные проверочные скрипты удалены.
 
 ### 2026-08-15 — Загрузка на GitHub (Cline)
 - Создан репозиторий **github.com/Timitry100/xolodilnik** (публичный, ветка `main`).

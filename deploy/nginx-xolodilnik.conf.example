@@ -1,26 +1,40 @@
 # Пример: добавить сайт «Холодильник» в nginx на том же сервере (Windows).
 #
 # Порядок:
-#   1. В панели DNS регистратора/хостинга создай A-запись:  app.твой-домен.ru  →  ТВОЙ_СТАТИЧНЫЙ_IP
-#   2. Вставь этот блок в секцию http { ... } файла nginx.conf
+#   1. В панели DNS: A-запись app → статичный IP (уже сделано: app.bobkoved.ru → 95.181.213.106)
+#   2. Выпустить сертификат Let's Encrypt через win-acme (см. инструкцию)
+#   3. Вставить ЭТИ ДВА server-блока в секцию http { ... } файла nginx.conf
 #      (обычно C:\nginx\conf\nginx.conf)
-#   3. Проверь и перезагрузи:  nginx -t   →   nginx -s reload
-#   4. Запусти сервер «Холодильника» (start.bat), затем открой https://app.твой-домен.ru
-#   5. В server\.env укажи APP_URL=https://app.твой-домен.ru
-#   6. Порт 3000 наружу НЕ открывай (всё ходит через nginx по 443).
+#   4. Проверь и перезагрузи:  nginx -t   →   nginx -s reload
+#   5. Запусти сервер «Холодильника» (start.bat), затем открой https://app.bobkoved.ru
+#   6. В server\.env укажи APP_URL=https://app.bobkoved.ru
+#   7. Порт 3000 наружу НЕ открывай (всё ходит через nginx по 443).
 
+# ---------- Блок 1: HTTP-порт 80 (редирект + проверка домена для win-acme) ----------
+server {
+    listen 80;
+    server_name app.bobkoved.ru;
+
+    # папка для проверки владения доменом (win-acme кладёт сюда временные файлы)
+    location ^~ /.well-known/acme-challenge/ {
+        default_type "text/plain";
+        root C:/acme;            # файлы будут лежать в C:/acme/.well-known/acme-challenge/
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# ---------- Блок 2: HTTPS-порт 443 (само приложение) ----------
 server {
     listen 443 ssl;
     http2 on;
-    server_name app.твой-домен.ru;
+    server_name app.bobkoved.ru;
 
-    # Пути к сертификатам. Переиспользуй сертификат от первого сайта,
-    # если у тебя wildcard (*.твой-домен.ru), или выпусти отдельный.
-    ssl_certificate     C:/путь/к/fullchain.pem;
-    ssl_certificate_key C:/путь/к/privkey.pem;
-
-    # Опционально — подтянуть современные настройки SSL от первого сайта
-    # ssl_protocols TLSv1.2 TLSv1.3;
+    # Сертификаты, выпущенные win-acme (порядок файлов: certificate.pem, privkey.pem)
+    ssl_certificate     C:/acme/certs/app.bobkoved.ru/certificate.pem;
+    ssl_certificate_key C:/acme/certs/app.bobkoved.ru/privkey.pem;
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -32,3 +46,4 @@ server {
         proxy_read_timeout 120s;
     }
 }
+
