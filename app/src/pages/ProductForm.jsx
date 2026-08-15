@@ -44,6 +44,7 @@ export default function ProductForm() {
   const [error, setError] = useState('');
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [searchDone, setSearchDone] = useState(false);
   const nameRef = useRef(null);
 
   // Если открыли через «🔍 Поиск» — сразу фокус на поле названия
@@ -103,6 +104,7 @@ export default function ProductForm() {
   const handleSearch = async () => {
     if (!form.name.trim() || searching) return;
     setSearching(true);
+    setSearchDone(false);
     setError('');
     setSearchResults([]);
     try {
@@ -112,6 +114,7 @@ export default function ProductForm() {
       setError('Не удалось выполнить поиск: ' + e.message);
     }
     setSearching(false);
+    setSearchDone(true);
   };
 
   const handlePick = (p) => {
@@ -160,6 +163,12 @@ export default function ProductForm() {
             {searching ? '🔍 Ищу…' : '🔍 Найти в базах по названию'}
           </button>
         </div>
+
+        {searchDone && searchResults.length === 0 && !searching && (
+          <div className="scanner-status" style={{ margin: '8px 0' }}>
+            🤷 Ничего не найдено. Попробуй другое название или заполни форму вручную.
+          </div>
+        )}
 
         {searchResults.length > 0 && (
           <div className="search-results">

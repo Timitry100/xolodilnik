@@ -151,11 +151,12 @@ export async function searchProducts(query) {
     `&search_simple=1&action=process&json=1&page_size=10` +
     `&fields=code,product_name,product_name_ru,brands,categories_ru,image_front_small_url,quantity,nutriments,ingredients_text_ru`;
 
-  for (let attempt = 0; attempt < 3; attempt++) {
+  // Быстрый поиск: максимум 2 попытки, таймаут 8 секунд
+  for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const { status, json } = await fetchJson(url, { timeoutMs: 15000 });
-      if (status === 503 && attempt < 2) {
-        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+      const { status, json } = await fetchJson(url, { timeoutMs: 8000 });
+      if (status === 503 && attempt === 0) {
+        await new Promise((r) => setTimeout(r, 300));
         continue;
       }
       if (status !== 200 || !json) return [];
@@ -181,7 +182,7 @@ export async function searchProducts(query) {
           };
         });
     } catch {
-      /* пробуем ещё раз */
+      return []; // сеть недоступна — не ждём повторных попыток
     }
   }
   return [];
