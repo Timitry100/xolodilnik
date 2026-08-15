@@ -15,7 +15,7 @@ import {
 } from './db.js';
 import { generateRecipes } from './recipes.js';
 import { resolveHonestSign } from './honestSign.js';
-import { lookupProduct } from './lookup.js';
+import { lookupProduct, searchProducts } from './lookup.js';
 import { analyzeProductImage } from './gemini.js';
 
 export const apiApp = express();
@@ -149,6 +149,19 @@ apiApp.get('/api/lookup/:code', requireUser, async (req, res) => {
   } catch (e) {
     console.error('[api] ошибка lookup:', e.message);
     res.status(500).json({ error: 'Не удалось найти товар' });
+  }
+});
+
+/** Поиск товаров по названию в открытых базах. */
+apiApp.get('/api/search', requireUser, async (req, res) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    if (!q) return res.json([]);
+    const results = await searchProducts(q);
+    res.json(results);
+  } catch (e) {
+    console.error('[api] ошибка search:', e.message);
+    res.status(500).json({ error: 'Не удалось выполнить поиск' });
   }
 });
 

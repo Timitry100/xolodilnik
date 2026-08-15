@@ -141,3 +141,48 @@ export async function lookupProduct(code) {
     null
   );
 }
+
+/** Поиск товаров по названию в Open Food Facts (есть российские товары). */
+export async function searchProducts(query) {
+  const q = String(query || '').trim();
+  if (q.length < 2) return [];
+  const url =
+    `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}` +
+    `&search_simple=1&action=process&json=1&page_size=10` +
+    `&fields=code,product_name,product_name_ru,brands,categories_ru,image_front_small_url,quantity,nutriments,ingredients_text_ru`;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const { status, json } = await fetchJson(url, { timeoutMs: 15000 });
+      if (status === 503 && attempt < 2) {
+        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+        continue;
+      }
+      if (status !== 200 || !json) return [];
+      const products = json.products || [];
+      return products
+        .filter((p) => p.product_name || p.product_name_ru)
+        .slice(0, 10)
+        .map((p) => {
+          const n = p.nutriments || {};
+          const cat = String(p.categories_ru || '').split(',')[0].trim();
+          return {
+            code: p.code || '',
+            name: p.product_name_ru || p.product_name || '',
+            brand: p.brands || '',
+            category: cat || '',
+            kcal: n['energy-kcal_100g'] ?? null,
+            protein: n.proteins_100g ?? null,
+            fat: n.fat_100g ?? null,
+            carbs: n.carbohydrates_100g ?? null,
+            composition: p.ingredients_text_ru || '',
+            image_url: p.image_front_small_url || '',
+            volume: p.quantity || '',
+          };
+        });
+    } catch {
+      /* пробуем ещё раз */
+    }
+  }
+  return [];
+}

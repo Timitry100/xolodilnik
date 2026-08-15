@@ -532,3 +532,50 @@ body {
   border-color: var(--ok);
 }
 
+/* ---------- результаты поиска по названию ---------- */
+.search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 14px;
+}
+
+.search-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.search-item img,
+.search-ph {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--bg);
+  flex: 0 0 auto;
+}
+
+.search-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.search-body small {
+  color: var(--muted);
+}
+
+.search-body .p-kbju {
+  margin-top: 2px;
+}
+

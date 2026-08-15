@@ -38,9 +38,12 @@ export default function ProductForm() {
     composition: initial.composition || '',
     quantity: initial.quantity || 1,
     note: initial.note || '',
+    barcode: initial.barcode || '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -73,10 +76,10 @@ export default function ProductForm() {
       quantity: Number(form.quantity) || 1,
       note: form.note || null,
       source: initial.source || 'manual',
-      barcode: initial.barcode || null,
+      barcode: form.barcode || initial.barcode || null,
       gtin: initial.gtin || null,
       serial: initial.serial || null,
-      image_url: initial.image_url || null,
+      image_url: form.image_url || initial.image_url || null,
     };
     try {
       if (editing) await api(`/products/${initial.id}`, { method: 'PUT', body: payload });
@@ -87,6 +90,39 @@ export default function ProductForm() {
       setError(e.message);
     }
     setSaving(false);
+  };
+
+  // Поиск товара по названию в открытых базах
+  const handleSearch = async () => {
+    if (!form.name.trim() || searching) return;
+    setSearching(true);
+    setError('');
+    setSearchResults([]);
+    try {
+      const results = await api(`/search?q=${encodeURIComponent(form.name.trim())}`);
+      setSearchResults(results || []);
+    } catch (e) {
+      setError('Не удалось выполнить поиск: ' + e.message);
+    }
+    setSearching(false);
+  };
+
+  const handlePick = (p) => {
+    setForm((f) => ({
+      ...f,
+      name: p.name || f.name,
+      brand: p.brand || f.brand,
+      category: p.category || f.category,
+      volume: p.volume || f.volume,
+      kcal: p.kcal ?? f.kcal,
+      protein: p.protein ?? f.protein,
+      fat: p.fat ?? f.fat,
+      carbs: p.carbs ?? f.carbs,
+      composition: p.composition || f.composition,
+      barcode: p.code || f.barcode,
+      image_url: p.image_url || f.image_url,
+    }));
+    setSearchResults([]);
   };
 
   const sourceLabel = initial.source ? SOURCE_LABELS[initial.source] || '✏️ Вручную' : '✏️ Вручную';
@@ -108,7 +144,36 @@ export default function ProductForm() {
         <div className="field">
           <label>Название *</label>
           <input value={form.name} onChange={set('name')} placeholder="Например: Молоко 3,2%" />
+          <button
+            className="chip"
+            style={{ marginTop: 8 }}
+            onClick={handleSearch}
+            disabled={searching || !form.name.trim()}
+          >
+            {searching ? '🔍 Ищу…' : '🔍 Найти в базах по названию'}
+          </button>
         </div>
+
+        {searchResults.length > 0 && (
+          <div className="search-results">
+            {searchResults.map((p, i) => (
+              <button key={i} className="search-item" onClick={() => handlePick(p)}>
+                {p.image_url ? <img src={p.image_url} alt="" /> : <span className="search-ph" />}
+                <span className="search-body">
+                  <b>{p.name}</b>
+                  {p.brand ? <small>{p.brand}</small> : null}
+                  <span className="p-kbju">
+                    {p.kcal != null ? <span className="kbju-chip">{p.kcal} ккал</span> : null}
+                    {p.protein != null ? <span className="kbju-chip">Б {p.protein}</span> : null}
+                    {p.fat != null ? <span className="kbju-chip">Ж {p.fat}</span> : null}
+                    {p.carbs != null ? <span className="kbju-chip">У {p.carbs}</span> : null}
+                    {p.volume ? <span className="kbju-chip">{p.volume}</span> : null}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="field">
           <label>Бренд</label>
