@@ -65,6 +65,63 @@ async function lookupUpcitemdb(ean) {
   }
 }
 
+function stripHtml(html) {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** barcodespider.com — бесплатный парсинг страницы по EAN. */
+export async function lookupBarcodespider(ean) {
+  try {
+    const { status, text } = await fetchJson(`https://www.barcodespider.com/${ean}`, { timeoutMs: 12000 });
+    if (status !== 200) return null;
+    const title = (text.match(/<title>(.*?)<\/title>/i) || [])[1] || '';
+    const m = title.match(/^(.+?)\s*-\s*EAN\s+\d+/i);
+    if (!m) return null; // товар не найден
+    const plain = stripHtml(text);
+    const name = m[1].trim();
+    const brand = (plain.match(/\bBrand\s+([A-Za-z0-9.'-]+)/) || [])[1] || '';
+    const manufacturer = (plain.match(/Manufacturer:\s*([^.\n]{1,60})/) || [])[1] || '';
+    const weight = (plain.match(/Weight:\s*([\d.]+\s*[A-Za-z]+)/) || [])[1] || '';
+    return {
+      name,
+      brand: brand || manufacturer || '',
+      volume: weight || '',
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** upcdatabase.org — бесплатный парсинг страницы по EAN. */
+export async function lookupUpcdatabase(ean) {
+  try {
+    const { status, text } = await fetchJson(`https://upcdatabase.org/code/${ean}`, { timeoutMs: 12000 });
+    if (status !== 200) return null;
+    const plain = stripHtml(text);
+    // название — после "Date Added: <дата>" до "Alias"
+    const dateIdx = plain.search(/Date Added:\s*\d{1,2}\s+[A-Za-z]+,\s*\d{4}/);
+    if (dateIdx === -1) return null;
+    const aliasIdx = plain.indexOf('Alias', dateIdx);
+    const seg = plain.slice(dateIdx, aliasIdx === -1 ? undefined : aliasIdx);
+    const name = seg.replace(/^Date Added:.*?\d{4}\s*/, '').trim();
+    if (!name) return null;
+    const brand = (plain.match(/\bBrand\s+([A-Z][A-Za-z0-9 .,'-]{1,80})/) || [])[1] || '';
+    const volume = (plain.match(/\bQuantity\s+([\d.,]+\s*\w+)/) || [])[1] || '';
+    return {
+      name,
+      brand: brand.split(',')[0].trim() || '',
+      volume,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function lookupProduct(code) {
   const digits = String(code || '').replace(/\D/g, '');
   const ean = normalizeToEan(code);
@@ -76,5 +133,11 @@ export async function lookupProduct(code) {
   if (ean.length !== 13) return null;
 
   // 2) Открытые базы
-  return (await lookupOFF(ean)) || (await lookupUpcitemdb(ean)) || null;
+  return (
+    (await lookupOFF(ean)) ||
+    (await lookupBarcodespider(ean)) ||
+    (await lookupUpcdatabase(ean)) ||
+    (await lookupUpcitemdb(ean)) ||
+    null
+  );
 }
