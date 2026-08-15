@@ -102,11 +102,11 @@ async function checkUpdates() {
   }
   console.log('[auto-update] ✅ Изменения подтянуты.');
 
-  if (changed.includes('server/package.json')) {
+  if (changedFiles.some((f) => f === 'server/package.json' || f === 'server/package-lock.json')) {
     console.log('[auto-update] Обновляю зависимости сервера…');
     await run('npm install --no-audit --no-fund', SERVER_DIR);
   }
-  if (changed.includes('app/package.json')) {
+  if (changedFiles.some((f) => f === 'app/package.json' || f === 'app/package-lock.json')) {
     console.log('[auto-update] Обновляю зависимости приложения…');
     await run('npm install --no-audit --no-fund', APP_DIR);
   }
@@ -119,7 +119,18 @@ async function checkUpdates() {
 }
 
 console.log(`[auto-update] Джоб запущен. Проверяю обновления каждые ${Math.round(CHECK_INTERVAL_MS / 1000)} сек.`);
-startServer();
+
+// Всегда проверяем/ставим зависимости при старте (server и app) —
+// чтобы сервер не падал, если в новом коде появились новые пакеты.
+async function initDeps() {
+  console.log('[auto-update] Проверяю зависимости...');
+  await run('npm install --no-audit --no-fund', SERVER_DIR);
+  await run('npm install --no-audit --no-fund', APP_DIR);
+}
+
+initDeps().then(() => {
+  startServer();
+});
 setInterval(checkUpdates, CHECK_INTERVAL_MS);
 
 function shutdown() {

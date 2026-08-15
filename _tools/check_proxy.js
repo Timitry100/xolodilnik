@@ -17,7 +17,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import process from 'node:process';
 
-const ROOT = path.join(process.env.USERPROFILE, 'Desktop', 'Xolodilnik');
+const ROOT = process.cwd(); // проект всегда запускается из своей папки (start.bat делает cd /d %~dp0)
 const ENV_FILE = path.join(ROOT, 'server', '.env');
 const TARGET_HOST = 'api.telegram.org';
 const TARGET_PORT = 443;

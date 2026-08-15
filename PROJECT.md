@@ -376,6 +376,15 @@ git config --global credential.helper manager   # Git сохранит логи�
 - В раздел 14 добавлено правило: после любых изменений — `git add -A && git commit && git push`.
 - **Осталось:** настроить авторизацию для будущих пушей с этой машины (`gh auth login` или `credential.helper`).
 
+### 2026-08-15 — Исправление путей и автозависимостей на сервере (Cline)
+- `check_proxy.js`: путь к проекту теперь `process.cwd()` (был захардкожен `Desktop\Xolodilnik`,
+  а на сервере проект лежит в `C:\xolodilnik` — `.env` не находился).
+- `autoupdate.js`: при старте ВСЕГДА выполняет `npm install` (server и app) — новые пакеты
+  (например `socks-proxy-agent`) устанавливаются автоматически. При обновлении теперь
+  проверяются и `package-lock.json`.
+- На сервере была ошибка `Cannot find package 'socks-proxy-agent'` — из-за неустановленных
+  зависимостей. Решение на сервере: `git pull` → `start.bat` (новый autoupdate поставит пакеты сам).
+
 ### 2026-08-15 — Автопроверка прокси при запуске start.bat (Cline)
 - Создан `_tools/check_proxy.js`: при запуске проверяет `TG_PROXY` из `server/.env`
   (прямой CONNECT к `api.telegram.org` через SOCKS5/HTTP, таймаут 10 с).

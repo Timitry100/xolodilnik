@@ -28,7 +28,7 @@ child.on('exit', (code) => {
   if (!killed) finish(code);
 });
 
-// сервер после запуска работает бесконечно — завершаем тест через 20 сек
+// сервер после запуска работает бесконечно — завершаем тест через 45 сек
 setTimeout(() => {
   ok = out.includes('[api] сервер слушает');
   const badEcho = out.includes('@echo') && out.includes('не является');
@@ -37,5 +37,5 @@ setTimeout(() => {
   killed = true;
   spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
   setTimeout(() => finish(ok && !badEcho ? 0 : 1), 800);
-}, 20000);
+}, 45000);
 
