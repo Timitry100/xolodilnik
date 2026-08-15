@@ -7,7 +7,6 @@ const root = path.join(process.env.USERPROFILE, 'Desktop', 'Xolodilnik', '_tools
 const toRemove = [
   'check_site.mjs',
   'check_cert.mjs',
-  'github_token.txt',
   '_askpass.cmd',
   'ghcheck.mjs',
   'ghcheck2.mjs',

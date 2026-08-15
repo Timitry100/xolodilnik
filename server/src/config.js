@@ -8,6 +8,7 @@ export const config = {
   botToken: process.env.BOT_TOKEN || '',
   port: Number(process.env.PORT || 3001), // 3001 — порт 3000 занят первым сайтом bobkoved.ru
   appUrl: process.env.APP_URL || '',
+  tgProxy: process.env.TG_PROXY || '', // прокси для Telegram-бота (VPN): http://127.0.0.1:10809
   dbPath: process.env.DB_PATH || path.join(__dirname, '..', 'data', 'xolodilnik.db'),
   distPath: path.join(__dirname, '..', '..', 'app', 'dist'),
 

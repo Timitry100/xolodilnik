@@ -17,7 +17,13 @@ export function initBot() {
     return null;
   }
 
-  bot = new TelegramBot(config.botToken, { polling: true });
+  const botOptions = { polling: true };
+  // Если Telegram заблокирован (РФ) — бот ходит через прокси (VPN), см. TG_PROXY в .env
+  if (config.tgProxy) {
+    botOptions.request = { proxy: config.tgProxy };
+    console.log(`[bot] используется прокси: ${config.tgProxy}`);
+  }
+  bot = new TelegramBot(config.botToken, botOptions);
 
   bot.on('polling_error', (err) => {
     if (err?.response?.statusCode === 401) {

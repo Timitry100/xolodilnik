@@ -149,6 +149,7 @@ cd ../server && npm start   # сервер сам раздаёт app/dist на �
 | `AI_MODEL` | Модель ИИ (по умолчанию `deepseek/deepseek-chat:free`) |
 | `AI_BASE_URL` | Базовый URL OpenAI-совместимого API (по умолчанию OpenRouter) |
 | `CRPT_CLIENT_ID` / `CRPT_CLIENT_SECRET` | Доступ к официальному API ЦРПТ (личный кабинет https://ismp.crpt.ru). Без них — фолбэк Open Food Facts |
+| `TG_PROXY` | Прокси для бота, если Telegram заблокирован (РФ). Пример: `http://127.0.0.1:10809` (HTTP-прокси v2rayN) |
 
 `.env` НИКОГДА не коммитить в git (он в `.gitignore`). Токен бота — это секрет.
 
@@ -341,6 +342,14 @@ start.bat
 При первом запуске `start.bat` сам создаст `server/.env` и попросит токен бота.
 Дальше любые `git push` с компьютера будут подтягиваться на сервер автоматически.
 
+### GitHub-токен
+
+Токен GitHub хранится в файле **`_tools/github_token.txt`** (этот файл в `.gitignore` —
+в Git и на GitHub не попадает). Используется скриптами `_tools/push_github.mjs` и др.
+**НЕ выкладывать токен в `PROJECT.md` или другие коммитящиеся файлы** — репозиторий публичный,
+и токен станет доступен всем. После потери/утечки токена — отозвать его на GitHub
+(Settings → Developer settings → Tokens) и записать новый в `_tools/github_token.txt`.
+
 ### Настройка авторизации для пуша с этой машины
 
 Пока на компьютере нет сохранённого доступа к GitHub. Рекомендуется один раз выполнить:
@@ -366,6 +375,14 @@ git config --global credential.helper manager   # Git сохранит логи�
 - `start.bat` теперь запускает сервер через `_tools/autoupdate.js`.
 - В раздел 14 добавлено правило: после любых изменений — `git add -A && git commit && git push`.
 - **Осталось:** настроить авторизацию для будущих пушей с этой машины (`gh auth login` или `credential.helper`).
+
+### 2026-08-15 — Прокси для бота (Telegram заблокирован в РФ) + хранение токена (Cline)
+- На сервере бот не подключается к `api.telegram.org` (`connect ETIMEDOUT` — блокировка Telegram).
+- Добавлен `TG_PROXY` в `.env`: `bot.js` передаёт прокси в `node-telegram-bot-api`
+  (поддержка v2rayN: HTTP `http://127.0.0.1:10809`, SOCKS5 `socks5://127.0.0.1:10808`).
+- Добавлена защита `unhandledRejection` в `index.js` — сервер не падает от сетевых ошибок бота.
+- GitHub-токен сохранён в `_tools/github_token.txt` (в `.gitignore`, не коммитится).
+  Правило: токены в `PROJECT.md` не писать (репозиторий публичный).
 
 ### 2026-08-15 — Смена порта на 3001 (Cline)
 - Обнаружено: первый сайт `bobkoved.ru` в nginx проксирует на `127.0.0.1:3000` —
