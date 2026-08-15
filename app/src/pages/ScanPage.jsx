@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { decodeFromCanvas } from '../scanners/zxing.js';
 import { parseGtinFromDataMatrix } from '../scanners/dataMatrix.js';
-import { enrichFromBarcode } from '../scanners/openFoodFacts.js';
 import { recognizeText } from '../scanners/ocr.js';
 import { parseProductText } from '../scanners/parseText.js';
 import { haptic } from '../telegram.js';
@@ -87,28 +86,53 @@ export default function ScanPage() {
           busyRef.current = false;
           return;
         }
-        setStatus('✅ Честный знак! Ищем данные о товаре (ЦРПТ / открытые данные)…');
+        setStatus('✅ Честный знак! Ищем данные о товаре…');
         let productInfo = {};
         try {
           const hs = await api(`/honest-sign/${gtin}`);
           if (hs.product) productInfo = hs.product;
-          if (hs.crptConfigured === false) {
-            setStatus('✅ Код найден! Данные подтянуты из открытых источников.');
-          }
         } catch {
-          /* оставляем пустую форму — пользователь заполнит вручную */
+          /* продолжаем */
+        }
+        if (!productInfo.name) {
+          productInfo = await autoFillFromOCR(productInfo);
         }
         navigate('/form', { state: { source: 'honest_sign', gtin, raw: res.text, ...productInfo } });
       } else {
         const code = res.text.replace(/\D/g, '');
         setStatus('✅ Штрихкод! Ищем данные о товаре…');
-        const off = await enrichFromBarcode(code);
-        navigate('/form', { state: { source: 'barcode', barcode: code, ...off } });
+        let productInfo = {};
+        try {
+          const data = await api(`/lookup/${code}`);
+          if (data.product) productInfo = data.product;
+        } catch {
+          /* продолжаем */
+        }
+        if (!productInfo.name) {
+          productInfo = await autoFillFromOCR(productInfo);
+        }
+        navigate('/form', { state: { source: 'barcode', barcode: code, ...productInfo } });
       }
     } catch (e) {
       setError('Ошибка при поиске данных: ' + e.message);
     }
     busyRef.current = false;
+  };
+
+  // Если в открытых базах товар не найден — автоматически распознаём текст с упаковки (OCR)
+  const autoFillFromOCR = async (productInfo) => {
+    try {
+      setStatus('🧠 В базе не нашли — распознаю текст с упаковки…');
+      const canvas = canvasRef.current;
+      if (!canvas || !canvas.width) return productInfo;
+      const text = await recognizeText(canvas);
+      if (text && text.trim()) {
+        return { ...productInfo, ...parseProductText(text) };
+      }
+    } catch {
+      /* не удалось распознать — оставляем данные как есть */
+    }
+    return productInfo;
   };
 
   const doOcr = async () => {

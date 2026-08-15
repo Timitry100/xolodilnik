@@ -15,6 +15,7 @@ import {
 } from './db.js';
 import { generateRecipes } from './recipes.js';
 import { resolveHonestSign } from './honestSign.js';
+import { lookupProduct } from './lookup.js';
 
 export const apiApp = express();
 apiApp.use(express.json({ limit: '2mb' }));
@@ -124,7 +125,7 @@ apiApp.post('/api/recipes/generate', requireUser, async (req, res) => {
   }
 });
 
-/** Данные товара по GTIN «Честного знака» (ЦРПТ → фолбэк Open Food Facts). */
+/** Данные товара по GTIN «Честного знака» (ЦРПТ → фолбэк открытые базы). */
 apiApp.get('/api/honest-sign/:gtin', requireUser, async (req, res) => {
   try {
     const gtin = String(req.params.gtin).replace(/\D/g, '');
@@ -134,6 +135,19 @@ apiApp.get('/api/honest-sign/:gtin', requireUser, async (req, res) => {
   } catch (e) {
     console.error('[api] ошибка honest-sign:', e.message);
     res.status(500).json({ error: 'Не удалось получить данные по коду' });
+  }
+});
+
+/** Поиск товара по штрихкоду в открытых базах (OFF → upcitemdb). */
+apiApp.get('/api/lookup/:code', requireUser, async (req, res) => {
+  try {
+    const code = String(req.params.code).replace(/\D/g, '');
+    if (code.length < 8) return res.status(400).json({ error: 'Некорректный код' });
+    const product = await lookupProduct(code);
+    res.json({ code, product });
+  } catch (e) {
+    console.error('[api] ошибка lookup:', e.message);
+    res.status(500).json({ error: 'Не удалось найти товар' });
   }
 });
 
