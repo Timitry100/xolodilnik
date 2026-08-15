@@ -16,6 +16,7 @@ import {
 import { generateRecipes } from './recipes.js';
 import { resolveHonestSign } from './honestSign.js';
 import { lookupProduct } from './lookup.js';
+import { analyzeProductImage } from './gemini.js';
 
 export const apiApp = express();
 apiApp.use(express.json({ limit: '2mb' }));
@@ -148,6 +149,21 @@ apiApp.get('/api/lookup/:code', requireUser, async (req, res) => {
   } catch (e) {
     console.error('[api] ошибка lookup:', e.message);
     res.status(500).json({ error: 'Не удалось найти товар' });
+  }
+});
+
+/** Точное распознавание этикетки через Google Gemini. */
+apiApp.post('/api/ocr/analyze', requireUser, async (req, res) => {
+  const image = req.body?.image;
+  if (!image || typeof image !== 'string' || image.length < 100) {
+    return res.status(400).json({ ok: false, reason: 'нет изображения' });
+  }
+  try {
+    const result = await analyzeProductImage(image);
+    res.json(result);
+  } catch (e) {
+    console.error('[api] ошибка ocr/analyze:', e.message);
+    res.status(500).json({ ok: false, reason: e.message });
   }
 });
 

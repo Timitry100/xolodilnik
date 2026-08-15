@@ -5,6 +5,9 @@ import process from 'node:process';
 
 const root = path.join(process.env.USERPROFILE, 'Desktop', 'Xolodilnik', '_tools');
 const toRemove = [
+  'probe_gepir.mjs',
+  'probe_gepir2.mjs',
+  'probe_gepir3.mjs',
   'probe_apis.mjs',
   'probe_apis2.mjs',
   'check_site.mjs',

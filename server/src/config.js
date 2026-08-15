@@ -13,6 +13,8 @@ export const config = {
   botEnabled: process.env.BOT_ENABLED !== 'false',
   // Гостевой доступ: сайт работает без Telegram-авторизации (обычный браузер).
   allowGuest: process.env.ALLOW_GUEST !== 'false',
+  // Google Gemini для точного распознавания этикеток (бесплатный ключ: aistudio.google.com)
+  geminiApiKey: process.env.GEMINI_API_KEY || '',
   dbPath: process.env.DB_PATH || path.join(__dirname, '..', 'data', 'xolodilnik.db'),
   distPath: path.join(__dirname, '..', '..', 'app', 'dist'),
 

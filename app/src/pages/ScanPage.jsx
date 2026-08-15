@@ -245,6 +245,45 @@ export default function ScanPage() {
     navigate('/form', { state: { source: 'ocr', rawText: combinedRef.current, ...parsed } });
   };
 
+  // Точное распознавание этикетки нейросетью (Google Gemini) — один кадр
+  const doAiOcr = async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setError('');
+    setStatus('✨ Распознаю этикетку нейросетью…');
+    haptic('medium');
+    try {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (!video || !canvas || !video.videoWidth) return;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d', { willReadFrequently: true }).drawImage(video, 0, 0);
+      const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+      let productInfo = {};
+      let usedAi = false;
+      try {
+        const r = await api('/ocr/analyze', { method: 'POST', body: { image: base64 } });
+        if (r.ok && r.data) {
+          productInfo = r.data;
+          usedAi = true;
+        }
+      } catch {
+        /* фолбэк ниже */
+      }
+      if (!usedAi || !productInfo.name) {
+        setStatus('🧠 Нейросеть недоступна — использую обычный OCR…');
+        const text = await recognizeText(canvas);
+        const parsed = parseProductText(text);
+        productInfo = { ...parsed, ...productInfo };
+      }
+      navigate('/form', { state: { source: 'ocr', ...productInfo } });
+    } catch (e) {
+      setError('Ошибка распознавания: ' + e.message);
+    }
+    busyRef.current = false;
+  };
+
   // перезапуск камеры при смене режима
   useEffect(() => {
     scanningRef.current = false;
@@ -314,7 +353,12 @@ export default function ScanPage() {
       {mode === 'ocr' ? (
         <>
           {!ocrActive ? (
-            <button className="btn block" onClick={startContinuousOcr}>▶ Начать считывание</button>
+            <>
+              <button className="btn block" onClick={startContinuousOcr}>▶ Начать считывание</button>
+              <button className="btn secondary block" style={{ marginTop: 10 }} onClick={doAiOcr}>
+                ✨ Точное распознавание (AI)
+              </button>
+            </>
           ) : (
             <>
               <div className="ocr-progress">
