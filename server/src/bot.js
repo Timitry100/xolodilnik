@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import { SocksProxyAgent } from 'socks-proxy-agent';
 import { config } from './config.js';
 import { getOrCreateUser, listProducts, getStats, consumeProduct, deleteProduct } from './db.js';
 
@@ -18,9 +19,15 @@ export function initBot() {
   }
 
   const botOptions = { polling: true };
-  // Если Telegram заблокирован (РФ) — бот ходит через прокси (VPN), см. TG_PROXY в .env
+  // Если Telegram заблокирован (РФ) — бот ходит через прокси, см. TG_PROXY в .env
   if (config.tgProxy) {
-    botOptions.request = { proxy: config.tgProxy };
+    if (config.tgProxy.startsWith('socks')) {
+      // SOCKS4/SOCKS5 прокси: socks5://логин:пароль@хост:порт
+      botOptions.request = { agent: new SocksProxyAgent(config.tgProxy) };
+    } else {
+      // HTTP(S)-прокси: http://логин:пароль@хост:порт
+      botOptions.request = { proxy: config.tgProxy };
+    }
     console.log(`[bot] используется прокси: ${config.tgProxy}`);
   }
   bot = new TelegramBot(config.botToken, botOptions);

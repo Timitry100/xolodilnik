@@ -376,6 +376,14 @@ git config --global credential.helper manager   # Git сохранит логи�
 - В раздел 14 добавлено правило: после любых изменений — `git add -A && git commit && git push`.
 - **Осталось:** настроить авторизацию для будущих пушей с этой машины (`gh auth login` или `credential.helper`).
 
+### 2026-08-15 — Подключение SOCKS5-прокси для бота (Cline)
+- Куплен SOCKS5-прокси (проверен: CONNECT к api.telegram.org успешен, ✅).
+- Установлен пакет `socks-proxy-agent` (server). В `bot.js`: если `TG_PROXY` начинается
+  с `socks` — создаётся `SocksProxyAgent`; иначе HTTP-прокси через `request.proxy`.
+- Прокси используется ТОЛЬКО ботом; остальной трафик сервера идёт напрямую.
+- Формат в `server/.env`: `TG_PROXY=socks5://логин:пароль@хост:порт` (сам прокси в Git не хранится).
+- Проверено: https-запрос к api.telegram.org через SocksProxyAgent — успех (302).
+
 ### 2026-08-15 — Прокси для бота (Telegram заблокирован в РФ) + хранение токена (Cline)
 - На сервере бот не подключается к `api.telegram.org` (`connect ETIMEDOUT` — блокировка Telegram).
 - Добавлен `TG_PROXY` в `.env`: `bot.js` передаёт прокси в `node-telegram-bot-api`
