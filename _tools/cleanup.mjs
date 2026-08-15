@@ -5,6 +5,8 @@ import process from 'node:process';
 
 const root = path.join(process.env.USERPROFILE, 'Desktop', 'Xolodilnik', '_tools');
 const toRemove = [
+  'github_token.txt',
+  '_askpass.cmd',
   'ghcheck.mjs',
   'ghcheck2.mjs',
   'showenv.mjs',
