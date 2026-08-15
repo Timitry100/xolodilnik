@@ -66,6 +66,33 @@ function startServer() {
   });
 }
 
+/** Закрывает текущее окно и запускает новый autoupdate (с новым кодом) в новом окне. */
+function selfRestart() {
+  console.log('\n[auto-update] 🔄 Обновление получено. Закрываю старое окно и открываю новое...');
+  if (serverChild) {
+    try {
+      serverChild.kill();
+    } catch {}
+    serverChild = null;
+  }
+  let ok = false;
+  try {
+    // открываем новое окно консоли с новым autoupdate
+    const cmd = `start "Xolodilnik" /D "${ROOT}" node _tools\\autoupdate.js`;
+    spawn('cmd.exe', ['/c', cmd], { detached: true, stdio: 'ignore' }).unref();
+    ok = true;
+  } catch (e) {
+    console.error('[auto-update] ❌ Не удалось открыть новое окно:', e.message);
+  }
+  if (!ok) {
+    console.log('[auto-update] Перезапускаю только сервер (fallback)...');
+    startServer();
+    return;
+  }
+  console.log('[auto-update] Новое окно открыто, закрываюсь...');
+  setTimeout(() => process.exit(0), 2000);
+}
+
 async function checkUpdates() {
   const branch = git('symbolic-ref --short HEAD') || 'main';
   const remote = git('remote get-url origin');
@@ -110,12 +137,12 @@ async function checkUpdates() {
     console.log('[auto-update] Обновляю зависимости приложения…');
     await run('npm install --no-audit --no-fund', APP_DIR);
   }
-  if (changed.some((f) => f.startsWith('app/'))) {
+  if (changedFiles.some((f) => f.startsWith('app/'))) {
     console.log('[auto-update] Собираю фронтенд…');
     await run('npm run build', APP_DIR);
   }
-  console.log('[auto-update] 🔄 Перезапускаю сервер…');
-  startServer();
+  console.log('[auto-update] 🔄 Перезапускаю автообновление с новым кодом…');
+  selfRestart();
 }
 
 console.log(`[auto-update] Джоб запущен. Проверяю обновления каждые ${Math.round(CHECK_INTERVAL_MS / 1000)} сек.`);
