@@ -206,6 +206,12 @@ function ask(question) {
 /* ---------- главная логика ---------- */
 
 async function main() {
+  // Автопроверка порта: 3000 занят первым сайтом bobkoved.ru → ставим 3001
+  const env = readEnv();
+  if (!env.PORT || env.PORT === '3000') {
+    writeEnv('PORT', '3001');
+    console.log('[прокси] PORT=3001 установлен в server/.env (порт 3000 занят первым сайтом bobkoved.ru)');
+  }
   let proxy = process.argv[2] || readEnv().TG_PROXY || '';
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
