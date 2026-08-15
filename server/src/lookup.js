@@ -1,8 +1,9 @@
 import { fetchJson } from './http.js';
+import { findByCode } from './db.js';
 
 /**
- * Поиск товара по штрихкоду/GTIN в открытых базах.
- * Сначала Open Food Facts, затем upcitemdb.com.
+ * Поиск товара по штрихкоду/GTIN.
+ * Порядок: 1) личная база (ранее сохранённые товары), 2) Open Food Facts, 3) upcitemdb.
  * Возвращает нормализованный продукт или null.
  */
 
@@ -64,7 +65,15 @@ async function lookupUpcitemdb(ean) {
 }
 
 export async function lookupProduct(code) {
+  const digits = String(code || '').replace(/\D/g, '');
   const ean = normalizeToEan(code);
+
+  // 1) Личная база: ранее сохранённые товары с этим кодом
+  const local = findByCode(digits) || (ean !== digits ? findByCode(ean) : null);
+  if (local) return { ...local, _source: 'local' };
+
   if (ean.length !== 13) return null;
+
+  // 2) Открытые базы
   return (await lookupOFF(ean)) || (await lookupUpcitemdb(ean)) || null;
 }

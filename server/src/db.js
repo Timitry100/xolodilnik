@@ -184,3 +184,26 @@ export function getStats(userId) {
   const noDate = db.prepare('SELECT COUNT(*) c FROM products WHERE user_id = ? AND expiry_date IS NULL').get(userId).c;
   return { total, expired, expiring7, noDate };
 }
+
+/** Поиск товара в личной базе по штрихкоду/GTIN (для автозаполнения). */
+export function findByCode(code) {
+  const row = db
+    .prepare(
+      `SELECT name, brand, category, kcal, protein, fat, carbs, composition, image_url, source
+       FROM products WHERE barcode = ? OR gtin = ? ORDER BY updated_at DESC LIMIT 1`
+    )
+    .get(code, code);
+  if (!row) return null;
+  return {
+    name: row.name,
+    brand: row.brand || '',
+    category: row.category || '',
+    kcal: row.kcal,
+    protein: row.protein,
+    fat: row.fat,
+    carbs: row.carbs,
+    composition: row.composition || '',
+    image_url: row.image_url || '',
+    source: row.source || 'manual',
+  };
+}
