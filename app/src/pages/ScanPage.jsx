@@ -18,11 +18,16 @@ export default function ScanPage() {
   const [mode, setMode] = useState('cz');
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
+  const [ocrActive, setOcrActive] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState([]);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const scanningRef = useRef(false);
   const streamRef = useRef(null);
   const busyRef = useRef(false);
+  const ocrActiveRef = useRef(false);
+  const ocrTimerRef = useRef(null);
+  const combinedRef = useRef('');
 
   const stopCamera = () => {
     scanningRef.current = false;
@@ -162,9 +167,93 @@ export default function ScanPage() {
     busyRef.current = false;
   };
 
+  /* ---------- непрерывное считывание текста с упаковки ---------- */
+
+  // Объединяем тексты с разных кадров, убирая дубли
+  const mergeText = (oldText, newText) => {
+    const seen = [];
+    for (const line of String(oldText + '\n' + newText).split('\n')) {
+      const t = line.trim();
+      if (!t) continue;
+      const duplicate = seen.some((s) => s.includes(t) || t.includes(s));
+      if (!duplicate) seen.push(t);
+    }
+    return seen.join('\n');
+  };
+
+  const fieldsProgress = (parsed) => [
+    { key: 'name', label: 'Название', ok: !!parsed.name },
+    { key: 'brand', label: 'Марка', ok: !!parsed.brand },
+    { key: 'volume', label: 'Объём', ok: !!parsed.volume },
+    { key: 'kbju', label: 'КБЖУ', ok: parsed.kcal != null },
+    { key: 'composition', label: 'Состав', ok: !!parsed.composition },
+    { key: 'expiry', label: 'Срок', ok: !!parsed.expiry_date },
+  ];
+
+  const runOcrFrame = async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    try {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (!video || !canvas || !video.videoWidth) return;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d', { willReadFrequently: true }).drawImage(video, 0, 0);
+      setStatus('🧠 Считываю текст… води камерой по пачке');
+      const text = await recognizeText(canvas);
+      if (text && text.trim()) {
+        combinedRef.current = mergeText(combinedRef.current, text);
+        setOcrProgress(fieldsProgress(parseProductText(combinedRef.current)));
+      }
+    } catch {
+      /* пробуем следующий кадр */
+    }
+    busyRef.current = false;
+  };
+
+  const startContinuousOcr = () => {
+    if (ocrActiveRef.current) return;
+    ocrActiveRef.current = true;
+    setOcrActive(true);
+    combinedRef.current = '';
+    setOcrProgress([]);
+    setError('');
+    const loop = async () => {
+      if (!ocrActiveRef.current) return;
+      await runOcrFrame();
+      if (ocrActiveRef.current) {
+        ocrTimerRef.current = setTimeout(loop, 2500);
+      }
+    };
+    loop();
+  };
+
+  const stopOcr = () => {
+    ocrActiveRef.current = false;
+    setOcrActive(false);
+    if (ocrTimerRef.current) {
+      clearTimeout(ocrTimerRef.current);
+      ocrTimerRef.current = null;
+    }
+    setStatus('');
+  };
+
+  const doneOcr = () => {
+    stopOcr();
+    const parsed = parseProductText(combinedRef.current);
+    navigate('/form', { state: { source: 'ocr', rawText: combinedRef.current, ...parsed } });
+  };
+
   // перезапуск камеры при смене режима
   useEffect(() => {
     scanningRef.current = false;
+    ocrActiveRef.current = false;
+    setOcrActive(false);
+    if (ocrTimerRef.current) {
+      clearTimeout(ocrTimerRef.current);
+      ocrTimerRef.current = null;
+    }
     setError('');
     setStatus('');
     const t = setTimeout(() => startCamera(), 100);
@@ -175,8 +264,10 @@ export default function ScanPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
-  // остановка камеры при уходе со страницы
+  // остановка камеры и OCR при уходе со страницы
   useEffect(() => () => {
+    ocrActiveRef.current = false;
+    if (ocrTimerRef.current) clearTimeout(ocrTimerRef.current);
     scanningRef.current = false;
     streamRef.current?.getTracks().forEach((t) => t.stop());
   }, []);
@@ -221,7 +312,32 @@ export default function ScanPage() {
       {error && <div className="error-text">{error}</div>}
 
       {mode === 'ocr' ? (
-        <button className="btn block" onClick={doOcr}>📸 Сфотографировать и распознать</button>
+        <>
+          {!ocrActive ? (
+            <button className="btn block" onClick={startContinuousOcr}>▶ Начать считывание</button>
+          ) : (
+            <>
+              <div className="ocr-progress">
+                {ocrProgress.length === 0 ? (
+                  <span className="ocr-chip">⏳ Ждём текст…</span>
+                ) : (
+                  ocrProgress.map((p) => (
+                    <span key={p.key} className={`ocr-chip ${p.ok ? 'ok' : ''}`}>
+                      {p.ok ? '✅' : '⭕'} {p.label}
+                    </span>
+                  ))
+                )}
+              </div>
+              <div className="action-row" style={{ marginTop: 10 }}>
+                <button className="btn secondary" onClick={stopOcr}>⏹ Пауза</button>
+                <button className="btn" onClick={doneOcr}>✅ Готово</button>
+              </div>
+            </>
+          )}
+          <div className="scanner-status">
+            Води камерой по пачке — текст считывается автоматически
+          </div>
+        </>
       ) : (
         <div className="scanner-status">
           {mode === 'cz'

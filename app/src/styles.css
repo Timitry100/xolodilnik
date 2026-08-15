@@ -510,3 +510,25 @@ body {
   margin-bottom: 4px;
 }
 
+/* ---------- непрерывное считывание текста (OCR) ---------- */
+.ocr-progress {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.ocr-chip {
+  font-size: 12.5px;
+  border-radius: 10px;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+}
+
+.ocr-chip.ok {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
