@@ -9,6 +9,10 @@ export const config = {
   port: Number(process.env.PORT || 3001), // 3001 — порт 3000 занят первым сайтом bobkoved.ru
   appUrl: process.env.APP_URL || '',
   tgProxy: process.env.TG_PROXY || '', // прокси для Telegram-бота (VPN): http://127.0.0.1:10809
+  // Бот можно полностью отключить (BOT_ENABLED=false) — останется только сайт.
+  botEnabled: process.env.BOT_ENABLED !== 'false',
+  // Гостевой доступ: сайт работает без Telegram-авторизации (обычный браузер).
+  allowGuest: process.env.ALLOW_GUEST !== 'false',
   dbPath: process.env.DB_PATH || path.join(__dirname, '..', 'data', 'xolodilnik.db'),
   distPath: path.join(__dirname, '..', '..', 'app', 'dist'),
 

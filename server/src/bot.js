@@ -13,6 +13,10 @@ function formatDays(d) {
 }
 
 export function initBot() {
+  if (!config.botEnabled) {
+    console.warn('[bot] Бот отключён (BOT_ENABLED=false). Работает только сайт.');
+    return null;
+  }
   if (!config.botToken) {
     console.warn('[bot] BOT_TOKEN не задан — бот отключён. Заполните server/.env');
     return null;

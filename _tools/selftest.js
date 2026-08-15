@@ -12,8 +12,13 @@ const { apiApp } = await import(pathToFileURL(path.join(root, 'server', 'src', '
 const server = apiApp.listen(3000, async () => {
   try {
     let res = await jfetch('http://localhost:3000/api/stats');
-    console.log(`[selftest] GET /api/stats без авторизации → ${res.status}`);
-    if (res.status !== 401) throw new Error('ожидался 401 без initData');
+    console.log(`[selftest] GET /api/stats без авторизации (гость) → ${res.status}`);
+    if (res.status !== 200) throw new Error('гостевой доступ не работает');
+
+    res = await jfetch('http://localhost:3000/api/me');
+    const me = await res.json();
+    console.log(`[selftest] /api/me без initData → гость (telegram_id=${me.telegram_id})`);
+    if (me.telegram_id !== 'guest') throw new Error('ожидался гостевой пользователь');
 
     res = await jfetch('http://localhost:3000/');
     const html = await res.text();

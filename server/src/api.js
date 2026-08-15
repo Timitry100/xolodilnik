@@ -46,7 +46,15 @@ export function validateInitData(initData, botToken) {
 function requireUser(req, res, next) {
   try {
     const params = validateInitData(req.get('x-init-data') || '', config.botToken);
-    if (!params) return res.status(401).json({ error: 'Неверная подпись initData' });
+    if (!params) {
+      // Гостевой режим: сайт работает и без Telegram-авторизации (обычный браузер).
+      if (config.allowGuest) {
+        const guest = getOrCreateUser({ telegramId: 'guest', chatId: null, name: 'Гость' });
+        req.user = guest;
+        return next();
+      }
+      return res.status(401).json({ error: 'Неверная подпись initData' });
+    }
     let userJson = {};
     try {
       userJson = JSON.parse(params.get('user') || '{}');

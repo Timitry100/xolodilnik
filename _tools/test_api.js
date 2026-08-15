@@ -7,6 +7,8 @@ import process from 'node:process';
 const TOKEN = 'test_token_123';
 process.env.BOT_TOKEN = TOKEN;
 process.env.PORT = '3001';
+// в API-тесте проверяем авторизацию с initData, поэтому гость отключён
+process.env.ALLOW_GUEST = 'false';
 
 import { jfetch } from './jfetch.mjs';
 
