@@ -134,7 +134,7 @@ ngrok http 5173
 
 ```bash
 cd app && npm run build     # собирает фронтенд в app/dist
-cd ../server && npm start   # сервер сам раздаёт app/dist на порту 3000
+cd ../server && npm start   # сервер сам раздаёт app/dist на порту 3001 (3000 занят первым сайтом)
 
 ## 8. Конфигурация и секреты
 
@@ -217,12 +217,12 @@ cd ../server && npm start   # сервер сам раздаёт app/dist на �
 
 1. В панели DNS: A-запись `app` → статичный IP сервера.
 2. Добавить в `nginx.conf` (секция `http {}`) готовый блок из
-   **`deploy/nginx-xolodilnik.conf.example`** (прокси на `127.0.0.1:3000`).
+   **`deploy/nginx-xolodilnik.conf.example`** (прокси на `127.0.0.1:3001`).
    Сертификат — переиспользовать wildcard от первого сайта или выпустить новый.
 3. `nginx -t` → `nginx -s reload`.
-4. Запустить `start.bat` (сервер на порту 3000).
-5. `APP_URL=https://app.твой-домен.ru` в `server\.env`, указать тот же адрес в BotFather (Menu Button).
-6. Порт 3000 наружу НЕ открывать — всё идёт через nginx по 443.
+4. Запустить `start.bat` (сервер на порту 3001; порт 3000 занят первым сайтом bobkoved.ru).
+5. `APP_URL=https://app.bobkoved.ru` в `server\.env`, указать тот же адрес в BotFather (Menu Button).
+6. Порт 3001 наружу НЕ открывать — всё идёт через nginx по 443.
 
 ### SSL-сертификат для поддомена (win-acme)
 
@@ -259,7 +259,8 @@ app.твой-домен.ru {
 2. Скопировать папку проекта на VPS, создать `server/.env` с `BOT_TOKEN` и `APP_URL=https://app.твой-домен.ru`.
 3. Собрать фронтенд: `cd app && npm install && npm run build`.
 4. Установить сервер: `cd ../server && npm install`.
-5. Запустить: `npm start` (или двойной клик по `start.bat`). Сервер слушает порт 3000.
+5. Запустить: `npm start` (или двойной клик по `start.bat`). Сервер слушает порт 3001
+   (3000 занят первым сайтом bobkoved.ru).
 6. Чтобы бот работал после перезагрузки VPS — добавить запуск в автозагрузку
    (Планировщик задач Windows: `node C:\...\server\src\index.js` при входе в систему).
 
@@ -365,6 +366,13 @@ git config --global credential.helper manager   # Git сохранит логи�
 - `start.bat` теперь запускает сервер через `_tools/autoupdate.js`.
 - В раздел 14 добавлено правило: после любых изменений — `git add -A && git commit && git push`.
 - **Осталось:** настроить авторизацию для будущих пушей с этой машины (`gh auth login` или `credential.helper`).
+
+### 2026-08-15 — Смена порта на 3001 (Cline)
+- Обнаружено: первый сайт `bobkoved.ru` в nginx проксирует на `127.0.0.1:3000` —
+  наш сервер по умолчанию слушал тот же порт (конфликт). Порт проекта сменён на **3001**.
+- Обновлены: `config.js` (дефолт 3001), `server/.env.example`, `deploy/nginx-xolodilnik.conf.example`,
+  `start.bat`, `PROJECT.md`, `README.md`.
+- На сервере: в `server/.env` добавить строку `PORT=3001` (или обновить проект через git).
 
 ### 2026-08-15 — Поддомен app.bobkoved.ru: проверка и инструкция по сертификату (Cline)
 - DNS проверен: `app.bobkoved.ru` → `95.181.213.106` ✅ (A-запись уже создана).

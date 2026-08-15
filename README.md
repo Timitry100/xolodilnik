@@ -35,7 +35,7 @@ npm run dev:app        # http://localhost:5173
 
 ```bash
 npm run build
-npm start              # один процесс на порту 3000: API + фронтенд + бот
+npm start              # один процесс на порту 3001: API + фронтенд + бот
 ```
 
 Домен + HTTPS через Caddy (см. `PROJECT.md`, раздел 13).
