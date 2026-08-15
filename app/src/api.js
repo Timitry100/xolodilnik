@@ -1,11 +1,14 @@
-const initData = window.Telegram?.WebApp?.initData || '';
+// initData читается лениво (скрипт Telegram WebApp грузится async)
+function getInitData() {
+  return window.Telegram?.WebApp?.initData || '';
+}
 
 export async function api(path, { method = 'GET', body } = {}) {
   const res = await fetch('/api' + path, {
     method,
     headers: {
       'Content-Type': 'application/json',
-      'X-Init-Data': initData,
+      'X-Init-Data': getInitData(),
     },
     body: body ? JSON.stringify(body) : undefined,
   });

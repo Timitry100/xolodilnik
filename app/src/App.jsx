@@ -1,6 +1,6 @@
 import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { tg } from './telegram.js';
+import { getTg } from './telegram.js';
 import ProductList from './pages/ProductList.jsx';
 import ProductForm from './pages/ProductForm.jsx';
 import ProductDetail from './pages/ProductDetail.jsx';
@@ -11,7 +11,12 @@ const ScanPage = lazy(() => import('./pages/ScanPage.jsx'));
 
 export default function App() {
   useEffect(() => {
-    document.body.classList.toggle('tg-dark', tg?.colorScheme === 'dark');
+    const applyTheme = () => {
+      document.body.classList.toggle('tg-dark', getTg()?.colorScheme === 'dark');
+    };
+    applyTheme();
+    window.addEventListener('load', applyTheme);
+    return () => window.removeEventListener('load', applyTheme);
   }, []);
 
   return (
