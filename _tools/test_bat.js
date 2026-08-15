@@ -19,6 +19,8 @@ function finish(code) {
   if (done) return;
   done = true;
   console.log('=== КОД ЗАВЕРШЕНИЯ:', code, '===');
+  console.log('=== ВЫВОД ===');
+  console.log(out);
   process.exit(code ?? 0);
 }
 
@@ -26,7 +28,7 @@ child.on('exit', (code) => {
   if (!killed) finish(code);
 });
 
-// сервер после запуска работает бесконечно — завершаем тест через 12 сек
+// сервер после запуска работает бесконечно — завершаем тест через 20 сек
 setTimeout(() => {
   ok = out.includes('[api] сервер слушает');
   const badEcho = out.includes('@echo') && out.includes('не является');
@@ -35,5 +37,5 @@ setTimeout(() => {
   killed = true;
   spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
   setTimeout(() => finish(ok && !badEcho ? 0 : 1), 800);
-}, 12000);
+}, 20000);
 

@@ -376,6 +376,16 @@ git config --global credential.helper manager   # Git сохранит логи�
 - В раздел 14 добавлено правило: после любых изменений — `git add -A && git commit && git push`.
 - **Осталось:** настроить авторизацию для будущих пушей с этой машины (`gh auth login` или `credential.helper`).
 
+### 2026-08-15 — Автопроверка прокси при запуске start.bat (Cline)
+- Создан `_tools/check_proxy.js`: при запуске проверяет `TG_PROXY` из `server/.env`
+  (прямой CONNECT к `api.telegram.org` через SOCKS5/HTTP, таймаут 10 с).
+  Если прокси нет или не работает — просит вставить новый в формате
+  `логин:пароль@хост:порт`, сам определяет тип (SOCKS5/HTTP), проверяет и сохраняет
+  рабочий в `server/.env`. До 3 попыток.
+- `start.bat` вызывает `node _tools\check_proxy.js` перед запуском сервера (шаг 7).
+- Проверено: полный запуск через `start.bat` — прокси проверен (✅ socks5),
+  бот использует его, сервер слушает 3001.
+
 ### 2026-08-15 — Подключение SOCKS5-прокси для бота (Cline)
 - Куплен SOCKS5-прокси (проверен: CONNECT к api.telegram.org успешен, ✅).
 - Установлен пакет `socks-proxy-agent` (server). В `bot.js`: если `TG_PROXY` начинается
