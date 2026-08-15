@@ -70,6 +70,7 @@ export default function ProductList() {
     <>
       <div className="topbar">
         <h1>🧊 Холодильник</h1>
+        <Link className="chip" to="/form" state={{ focusSearch: true }} style={{ margin: 0 }}>🔍 Поиск</Link>
         <Link className="chip" to="/recipes" style={{ margin: 0 }}>🍳 Рецепты</Link>
       </div>
 

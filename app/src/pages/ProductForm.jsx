@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { CATEGORIES, guessCategory } from '../utils.js';
@@ -44,6 +44,13 @@ export default function ProductForm() {
   const [error, setError] = useState('');
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const nameRef = useRef(null);
+
+  // Если открыли через «🔍 Поиск» — сразу фокус на поле названия
+  useEffect(() => {
+    if (initial.focusSearch) nameRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -143,7 +150,7 @@ export default function ProductForm() {
 
         <div className="field">
           <label>Название *</label>
-          <input value={form.name} onChange={set('name')} placeholder="Например: Молоко 3,2%" />
+          <input ref={nameRef} value={form.name} onChange={set('name')} placeholder="Например: Молоко 3,2%" />
           <button
             className="chip"
             style={{ marginTop: 8 }}
