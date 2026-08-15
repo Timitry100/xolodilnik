@@ -1,0 +1,34 @@
+# Пример: добавить сайт «Холодильник» в nginx на том же сервере (Windows).
+#
+# Порядок:
+#   1. В панели DNS регистратора/хостинга создай A-запись:  app.твой-домен.ru  →  ТВОЙ_СТАТИЧНЫЙ_IP
+#   2. Вставь этот блок в секцию http { ... } файла nginx.conf
+#      (обычно C:\nginx\conf\nginx.conf)
+#   3. Проверь и перезагрузи:  nginx -t   →   nginx -s reload
+#   4. Запусти сервер «Холодильника» (start.bat), затем открой https://app.твой-домен.ru
+#   5. В server\.env укажи APP_URL=https://app.твой-домен.ru
+#   6. Порт 3000 наружу НЕ открывай (всё ходит через nginx по 443).
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name app.твой-домен.ru;
+
+    # Пути к сертификатам. Переиспользуй сертификат от первого сайта,
+    # если у тебя wildcard (*.твой-домен.ru), или выпусти отдельный.
+    ssl_certificate     C:/путь/к/fullchain.pem;
+    ssl_certificate_key C:/путь/к/privkey.pem;
+
+    # Опционально — подтянуть современные настройки SSL от первого сайта
+    # ssl_protocols TLSv1.2 TLSv1.3;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+    }
+}
